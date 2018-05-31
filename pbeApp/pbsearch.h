@@ -62,7 +62,7 @@ template<int dbr, int array> struct searcher
         int l = unescape_plan(temp.c_str(), temp.length());
         std::vector<char> buf(l);
         unescape(temp.c_str(), temp.length(), &buf[0], buf.size());
-        info.ParseFromString(&buf[0]);
+        info.ParseFromArray(&buf[0], l);
 
         if ((int) (info.type()) != type.pbcode) {
             std::ostringstream msg;
@@ -115,7 +115,7 @@ template<int dbr, int array> struct searcher
             int l = unescape_plan(temp.c_str(), temp.length());
             std::vector<char> buf(l);
             unescape(temp.c_str(), temp.length(), &buf[0], buf.size());
-            bool ok = sample.ParseFromString(&buf[0]);
+            bool ok = sample.ParseFromArray(&buf[0], l);
             if (!ok && logged == 0) {
                 std::cerr << "WARN: " << file
                         << ": Can't parse the data. Probably value is missing.\n";
