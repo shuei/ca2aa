@@ -80,6 +80,38 @@ void getStartOfYear(int year, epicsTimeStamp* t)
     t->nsec = 0;
 }
 
+// Get the year and month in which the given timestamp falls
+void getYearMonth(const epicsTimeStamp& t, int *year, int *month)
+{
+    time_t sec = t.secPastEpoch + POSIX_TIME_AT_EPICS_EPOCH;
+    tm result;
+    if(!gmtime_r(&sec, &result))
+        throw std::runtime_error("gmtime_r failed");
+    *year = 1900 + result.tm_year;
+    *month = 1 + result.tm_mon;
+}
+
+// Fetch the first second of the given year, month
+void getStartOfYearMonth(int year, int month, epicsTimeStamp* t)
+{
+#if 0
+    if (month>12) {
+        // it is assumed that struct tm will be normalized by timegm()
+        month = 1;
+        year ++;
+    }
+#endif
+    tm op;
+    memset(&op, 0, sizeof(op));
+    op.tm_mday = 1;
+    op.tm_mon = month - 1;
+    op.tm_year = year - 1900;
+    op.tm_yday = 1;
+    time_t firstsec = timegm(&op);
+    t->secPastEpoch = firstsec - POSIX_TIME_AT_EPICS_EPOCH;
+    t->nsec = 0;
+}
+
 int unescape(const char *in, size_t inlen, char *out, size_t outlen)
 {
     char *initout = out;

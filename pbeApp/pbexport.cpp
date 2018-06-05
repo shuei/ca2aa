@@ -8,6 +8,7 @@
 
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
@@ -40,12 +41,14 @@ struct PBWriter
     const RawValue::Data *samp;
     const CtrlInfo& info;
 
-    // The year currently being exported
+    // The year and month currently being exported
     int year;
+    int month;
     DbrType dtype;
     bool isarray;
     epicsTimeStamp startofyear;
-    epicsTimeStamp endofyear;
+    //epicsTimeStamp startofboundary;
+    epicsTimeStamp endofboundary;
 
     std::ofstream outpb;
     int typeChangeError;
@@ -185,8 +188,8 @@ void transcode_samples(PBWriter& self)
         previousType = self.reader.getType();
         sample_t *sample = (sample_t*)self.samp;
 
-        if(sample->stamp.secPastEpoch>=self.endofyear.secPastEpoch) {
-            std::cerr<<"Year boundary "<<sample->stamp.secPastEpoch<<" "<<self.endofyear.secPastEpoch <<"\n";
+        if(sample->stamp.secPastEpoch>=self.endofboundary.secPastEpoch) {
+            std::cerr<<"Boundary "<<sample->stamp.secPastEpoch<<" "<<self.endofboundary.secPastEpoch <<"\n";
             std::cerr<<"wrote: "<<nwrote<<"\n";
             self.typeChangeError = 0;
             return;
@@ -204,6 +207,12 @@ void transcode_samples(PBWriter& self)
 
         dbr_short_t sevr = sample->severity;
 
+        // sevr                     ArchiveDataClient.pl
+        // 3904 : Disconnected      "ARCH_DISCONNECT"
+        // 3872 : Archive Off       "ARCH_STOPPED"
+        // 3848 : Archive Disabled  "ARCH_DISABLED"
+        // 3856 : Repeat            "ARCH_REPEAT"
+        // 3968 : Est_Repeat        "ARCH_EST_REPEAT"
         if ((sevr == 3904) || (sevr == 3872) || (sevr == 3848)) {
             if (disconnected_epoch == 0) {
                 disconnected_epoch = sample->stamp.secPastEpoch;
@@ -325,9 +334,30 @@ void skip(PBWriter& self, const char* file)
 bool PBWriter::prepFile()
 {
     const RawValue::Data *samp(reader.get());
-    getYear(samp->stamp, &year);
-    getStartOfYear(year, &startofyear);
-    getStartOfYear(year+1, &endofyear);
+    getYearMonth(samp->stamp, &year, &month);
+
+    //boundary b = PARTITION_YEAR;
+    boundary b = PARTITION_MONTH;
+    switch (b) {
+    case PARTITION_YEAR:
+       getStartOfYear(year, &startofyear);
+       //getStartOfYear(year, &startofboundary);
+       getStartOfYear(year+1, &endofboundary);
+       break;
+    case PARTITION_MONTH:
+       getStartOfYear(year, &startofyear);
+       //getStartOfYearMonth(year, month, &startofboundary);
+       getStartOfYearMonth(year, month+1, &endofboundary);
+       break;
+    default:
+            std::ostringstream msg;
+            msg<<"Unsupported Partition "<<b;
+            throw std::runtime_error(msg.str());
+    }
+
+//    std::cout << "startofyear     : " << startofyear;
+//    //std::cout << "startofboundary : " << startofboundary;
+//    std::cout << "endofboundary   : " << endofboundary;
 
     dtype = reader.getType();
     isarray = reader.getCount()!=1;
@@ -384,10 +414,20 @@ bool PBWriter::prepFile()
     header.set_pvname(reader.channel_name.c_str());
 
     std::ostringstream fname;
+    switch (b) {
+    case PARTITION_YEAR:
+       fname << pvpathname(reader.channel_name.c_str())<<":"<<year<<".pb";
+       break;
+    case PARTITION_MONTH:
+       fname << pvpathname(reader.channel_name.c_str())<<":"<<year<<"_"<<std::setfill('0')<<std::setw(2)<<std::right<<month<<".pb";
+       break;
+    default:
+            std::ostringstream msg;
+            msg<<"Unsupported Partition "<<b;
+            throw std::runtime_error(msg.str());
+    }
     if (typeChangeError > 0) {
-        fname << pvpathname(reader.channel_name.c_str())<<":"<<year<<".pb."<<typeChangeError;
-    } else {
-        fname << pvpathname(reader.channel_name.c_str())<<":"<<year<<".pb";
+       fname << "."<<typeChangeError;
     }
 
     int fileexists = 0;
@@ -476,8 +516,10 @@ int main(int argc, char *argv[])
     //comment this if you want to see the protobuf logs
     google::protobuf::LogSilencer *silencer = new google::protobuf::LogSilencer();
 
-    if(argc<2)
+    if(argc<2) {
+        std::cerr << "Usage: " << argv[0] << " index-file" << std::endl;
         return 2;
+    }
     try{
     {
         char *seps = getenv("NAMESEPS");
