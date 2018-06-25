@@ -44,15 +44,20 @@ void createDirs(const std::string& path)
     {
         std::string part(path.substr(0, p));
         p++;
-        if(mkdir(part.c_str(), 0755)!=0)
+        if (part.size()<=0) {
+            continue;
+        }
+        if (mkdir(part.c_str(), 0755)!=0) {
             switch(errno) {
             case EEXIST:
                 break;
             default:
-                perror("mkdir");
+                printf("mkdir(%s) : %s\n", part.c_str(), strerror(errno));
+                break;
             }
-        else
-            std::cerr<<"Create directory "<<part<<"\n";
+        } else {
+           // std::cerr<<"Create directory "<<part<<"\n";
+        }
     }
 }
 
