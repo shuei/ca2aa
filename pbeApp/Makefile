@@ -7,12 +7,18 @@ include $(TOP)/configure/CONFIG
 
 PROD_HOST += listpvs
 listpvs_SRCS += listpvs.cpp
+# Link against XML library that ChannelArchiver links.
+listpvs_LDFLAGS += -lxerces-c
+#listpvs_LDFLAGS += -lexpat
 
 PROD_HOST += pbexport
 pbexport_SRCS += pbexport.cpp
 pbexport_SRCS += pbstreams.cpp
 pbexport_SRCS += pbeutil.cpp
 pbexport_SRCS += EPICSEvent.cpp
+# Link against XML library that ChannelArchiver links.
+pbexport_LDFLAGS += -lxerces-c
+#pbexport_LDFLAGS += -lexpat
 
 TESTPROD_HOST += testPB
 testPB_SRCS += testPB.cpp
