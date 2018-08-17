@@ -1,8 +1,8 @@
 
-#include <time.h>
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
+#include <ctime>
+#include <cstring>
+//#include <cerrno>
+#include <cstdlib>
 #include <algorithm>
 
 
