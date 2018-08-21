@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 // PostgreSQL
 #include <libpq-fe.h>
@@ -609,12 +610,13 @@ int PGSQLReader::readSample()
       int status_id = 0;
       sscanf(PQgetvalue(resp, 0, 3), " %d ", &status_id);
 
+      memset(&fSample, 0, sizeof(fSample));
       fSample.stamp.secPastEpoch = timestamp;
       fSample.stamp.nsec = nanosecs;
       fSample.status = getStatus(status_id);
       fSample.severity = getSeverity(severity_id);
 
-      if (fVerbose>1) printf("%s (%09d) %4d[%4d] %4d[%4d] [%d:%s] [%d:%s]"
+      if (fVerbose>1) printf("%s (%09d) %4d[%4d] %4d[%4d] num_val[%d:%s] float_val[%d:%s]"
                              , PQgetvalue(resp, 0, 0), nanosecs
                              , fSample.severity, severity_id
                              , fSample.status, status_id
@@ -624,24 +626,23 @@ int PGSQLReader::readSample()
                              , PQgetvalue(resp, 0, 5)
              );
 
-      reinterpret_cast<dbr_time_enum *>(&fSample)->value = 0xdead;
-      reinterpret_cast<dbr_time_long *>(&fSample)->value = 0xdeadbeef;
-      reinterpret_cast<dbr_time_double *>(&fSample)->value = 0x7ff7dead7fb7beef;
-
       if (fSample.severity==INVALID_ALARM && fSample.status>=3000) {
          // special treatment for Archiver specific status
-         if (fVerbose>1) printf(" <duymmy data: 0x%08x>", reinterpret_cast<dbr_time_long *>(&fSample)->value);
+         if (fVerbose>1) printf(" <dummy data>");
       } else if (!PQgetisnull(resp, 0, 4) && PQgetisnull(resp, 0, 5)) {
          // num_val is not empty, float_val is empty
          int num_val = 0;
          if (sscanf(PQgetvalue(resp, 0, 4), " %d ", &num_val) == 1) {
             if (fVerbose>1) printf(" %10d", num_val);
             switch(fDBRtype) {
-            case DBR_TIME_DOUBLE:
-               fSample.value = num_val;
-               break;
             case DBR_TIME_ENUM:
                reinterpret_cast<dbr_time_enum*>(&fSample)->value = num_val;
+               break;
+            case DBR_TIME_LONG:
+               reinterpret_cast<dbr_time_long*>(&fSample)->value = num_val;
+               break;
+            case DBR_TIME_DOUBLE:
+               fSample.value = num_val;
                break;
             default:
                printf("ERROR: Unsupported DBRTYPE: %d\n", fDBRtype);
@@ -658,16 +659,17 @@ int PGSQLReader::readSample()
          if (sscanf(PQgetvalue(resp, 0, 5), " %lf ", &float_val) == 1) {
             if (fVerbose>1) printf(" %.10lf", float_val);
             switch(fDBRtype) {
-            case DBR_TIME_DOUBLE:
-               // something is wrong
-               //reinterpret_cast<dbr_time_double*>(&fSample)->value = float_val;
-               fSample.value = float_val;
-               break;
 #if 0
             case DBR_TIME_ENUM:
                (*dbr_time_enum)(&fSample)->value = float_val;
                break;
 #endif
+            case DBR_TIME_LONG:
+               reinterpret_cast<dbr_time_long*>(&fSample)->value = float_val;
+               break;
+            case DBR_TIME_DOUBLE:
+               fSample.value = float_val;
+               break;
             default:
                printf("ERROR: Unsupported DBRTYPE: %d\n", fDBRtype);
                exit(-1);

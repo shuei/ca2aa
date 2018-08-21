@@ -557,6 +557,7 @@ struct DBRtype_t { int num; std::string str; };
 #define TYPE(t) {t, #t}
 static std::vector<DBRtype_t> kDBRtypes = {
    TYPE(DBR_TIME_ENUM),
+   TYPE(DBR_TIME_LONG),
    TYPE(DBR_TIME_DOUBLE),
 };
 
