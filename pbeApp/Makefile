@@ -42,7 +42,7 @@ pbgentestdata_SRCS += genTestData.cpp
 
 PROD_LIBS += Storage Tools ca Com
 
-PROD_SYS_LIBS += protobuf
+PROD_SYS_LIBS += protobuf pthread
 
 # override CFLAGS, etc.
 USR_CXXFLAGS += -I/usr/pgsql-9.5/include
