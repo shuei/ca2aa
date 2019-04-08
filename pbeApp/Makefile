@@ -5,13 +5,16 @@ include $(TOP)/configure/CONFIG
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 #=============================
 
+PGSQL_LIBDIR=/usr/pgsql-9.5/lib
+PGSQL_INCDIR=/usr/pgsql-9.5/include
+
 PROD_HOST += pgsql2pb
 pgsql2pb_SRCS += pgsql2pb.cpp
 pgsql2pb_SRCS += pbstreams.cpp
 pgsql2pb_SRCS += pbeutil.cpp
 pgsql2pb_SRCS += EPICSEvent.cpp
 pgsql2pb_SRCS += PGSQLReader.cpp
-pgsql2pb_LDFLAGS += -L/usr/pgsql-9.5/lib -lpq
+pgsql2pb_LDFLAGS += -L${PGSQL_LIBDIR} -lpq
 
 PROD_HOST += listpvs
 listpvs_SRCS += listpvs.cpp
@@ -45,7 +48,7 @@ PROD_LIBS += Storage Tools ca Com
 PROD_SYS_LIBS += protobuf pthread
 
 # override CFLAGS, etc.
-USR_CXXFLAGS += -I/usr/pgsql-9.5/include
+USR_CXXFLAGS += -I${PGSQL_INCDIR}
 USR_CXXFLAGS += -std=c++0x
 OPT_CFLAGS_YES = -O1 -g
 OPT_CXXFLAGS_YES = -O1 -g
