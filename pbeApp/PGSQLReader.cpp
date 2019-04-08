@@ -10,15 +10,12 @@
 #include <sstream>
 #include <cstring>
 
-// PostgreSQL
-#include <libpq-fe.h>
-
 // EPICS base
 #include <alarm.h>
 #include <alarmString.h>
 #include <epicsTime.h>
 
-// PostgreSQL
+// PGSQLReader class definition
 #include "PGSQLReader.h"
 
 //////////////////////////////////////////////////////////////////////

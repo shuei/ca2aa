@@ -11,12 +11,17 @@
 #include <string>
 #include <vector>
 
+// PostgreSQL
+#include <libpq-fe.h>
+#include <pg_config.h>
+#if PG_VERSION_NUM < 90200
+#error PostgreSQL 9.2 or later is required
+#endif
+
 // EPICS base
 #include <db_access.h>
 
-// PosgreSQL
-#include <libpq-fe.h>
-
+// EPICS Channel Archiver
 #define DISCONNECTED     3904  // 0x0f40
 #define ARCHIVE_OFF      3872  // 0x0f20
 #define ARCHIVE_DISABLED 3834  // 0x0f08
