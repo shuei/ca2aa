@@ -616,7 +616,7 @@ int PGSQLReader::readSample()
       fSample.status = getStatus(status_id);
       fSample.severity = getSeverity(severity_id);
 
-      if (fVerbose>1) printf("%s (%09d) %4d[%4d] %4d[%4d] num_val[%d:%s] float_val[%d:%s]"
+      if (fVerbose>1) printf("%s (%09d) %4d[%4d] %4d[%4d] num_val[%d \"%s\"] float_val[%d \"%s\"]"
                              , PQgetvalue(resp, 0, 0), nanosecs
                              , fSample.severity, severity_id
                              , fSample.status, status_id
