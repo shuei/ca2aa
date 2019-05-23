@@ -5,13 +5,6 @@ include $(TOP)/configure/CONFIG
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 #=============================
 
-PGSQL_LIBDIR=/usr/pgsql-9.5/lib
-PGSQL_INCDIR=/usr/pgsql-9.5/include
-
-# Link against XML library that ChannelArchiver links.
-XML_LDFLAGS = -lxerces-c
-#XML_LDFLAGS = -lexpat
-
 PROD_HOST += pgsql2pb
 pgsql2pb_SRCS += pgsql2pb.cpp
 pgsql2pb_SRCS += pbstreams.cpp
@@ -23,14 +16,14 @@ pgsql2pb_LDFLAGS += -L${PGSQL_LIBDIR} -lpq
 ifdef CHANNELARCHIVER
 PROD_HOST += listpvs
 listpvs_SRCS += listpvs.cpp
-listpvs_LDFLAGS += $(XML_LDFLAGS)
+listpvs_LDFLAGS += -l$(LIBXML)
 
 PROD_HOST += pbexport
 pbexport_SRCS += pbexport.cpp
 pbexport_SRCS += pbstreams.cpp
 pbexport_SRCS += pbeutil.cpp
 pbexport_SRCS += EPICSEvent.cpp
-pbexport_LDFLAGS += $(XML_LDFLAGS)
+pbexport_LDFLAGS += -l$(LIBXML)
 
 PROD_HOST += pbgentestdata
 pbgentestdata_SRCS += genTestData.cpp

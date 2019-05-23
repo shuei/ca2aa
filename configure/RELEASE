@@ -27,8 +27,16 @@ TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 # EPICS_BASE usually appears last so other apps can override stuff:
 EPICS_BASE=/usr/lib/epics
 
+# Set path to PostgreSQL includes and libraries
+PGSQL_INCDIR=/usr/pgsql-9.5/include
+PGSQL_LIBDIR=/usr/pgsql-9.5/lib
+
 # If you want to read/write ChannelArchiver data file, set CHANNELARCHIVER top directory:
 #CHANNELARCHIVER=$(EPICS_BASE)/../extensions
+
+# Set to the XML library that ChannelArchiver is configured with.
+LIBXML=xerces-c
+#LIBXML=expat
 
 # Set RULES here if you want to take build rules from somewhere
 # other than EPICS_BASE:
