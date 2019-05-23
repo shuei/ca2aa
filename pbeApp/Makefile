@@ -8,6 +8,10 @@ include $(TOP)/configure/CONFIG
 PGSQL_LIBDIR=/usr/pgsql-9.5/lib
 PGSQL_INCDIR=/usr/pgsql-9.5/include
 
+# Link against XML library that ChannelArchiver links.
+XML_LDFLAGS = -lxerces-c
+#XML_LDFLAGS = -lexpat
+
 PROD_HOST += pgsql2pb
 pgsql2pb_SRCS += pgsql2pb.cpp
 pgsql2pb_SRCS += pbstreams.cpp
@@ -16,20 +20,24 @@ pgsql2pb_SRCS += EPICSEvent.cpp
 pgsql2pb_SRCS += PGSQLReader.cpp
 pgsql2pb_LDFLAGS += -L${PGSQL_LIBDIR} -lpq
 
+ifdef CHANNELARCHIVER
 PROD_HOST += listpvs
 listpvs_SRCS += listpvs.cpp
-# Link against XML library that ChannelArchiver links.
-listpvs_LDFLAGS += -lxerces-c
-#listpvs_LDFLAGS += -lexpat
+listpvs_LDFLAGS += $(XML_LDFLAGS)
 
 PROD_HOST += pbexport
 pbexport_SRCS += pbexport.cpp
 pbexport_SRCS += pbstreams.cpp
 pbexport_SRCS += pbeutil.cpp
 pbexport_SRCS += EPICSEvent.cpp
-# Link against XML library that ChannelArchiver links.
-pbexport_LDFLAGS += -lxerces-c
-#pbexport_LDFLAGS += -lexpat
+pbexport_LDFLAGS += $(XML_LDFLAGS)
+
+PROD_HOST += pbgentestdata
+pbgentestdata_SRCS += genTestData.cpp
+
+# link against ChannelArchiver libraries
+PROD_LIBS += Storage Tools
+endif
 
 TESTPROD_HOST += testPB
 testPB_SRCS += testPB.cpp
@@ -40,11 +48,7 @@ TESTS += testPB
 
 TESTS += testconvert.py
 
-PROD_HOST += pbgentestdata
-pbgentestdata_SRCS += genTestData.cpp
-
-PROD_LIBS += Storage Tools ca Com
-
+PROD_LIBS += ca Com
 PROD_SYS_LIBS += protobuf pthread
 
 # override CFLAGS, etc.
