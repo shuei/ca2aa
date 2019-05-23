@@ -37,6 +37,43 @@
 
 //using namespace std;
 
+//
+#define NumStr(t) {t, #t}
+struct NumStr_t { int num; std::string str; };
+
+// supported Partition Granularity
+static std::vector<NumStr_t> kPartitions = {
+    NumStr(PARTITION_YEAR),
+    NumStr(PARTITION_MONTH),
+};
+
+// supported DBR types
+static std::vector<NumStr_t> kDBRtypes = {
+   NumStr(DBR_TIME_ENUM),
+   NumStr(DBR_TIME_LONG),
+   NumStr(DBR_TIME_DOUBLE),
+};
+
+int str2num(const std::string &str, const std::vector<NumStr_t> &list)
+{
+   // Numeric expression
+   if (std::all_of(str.begin(), str.end(), ::isdigit)) {
+      return stoi(str);
+   }
+
+   // String expression
+   for (auto itr = list.begin(); itr!=list.end(); ++itr) {
+      // std::cout << itr->num << " " << itr->str <<std::endl;
+      if (str == itr->str) {
+         return itr->num;
+      }
+   }
+
+   // unsupported DBRTYPE
+   return -1;
+}
+
+//
 struct PBWriter
 {
    PGSQLReader& reader;
@@ -56,8 +93,9 @@ struct PBWriter
    int typeChangeError;
    const std::string name;
    const std::string outdir;
+   const boundary_t  boundary;
 
-   PBWriter(PGSQLReader& reader, std::string pv, std::string outdir);
+   PBWriter(PGSQLReader& reader, std::string pv, std::string outdir, int b);
    void write(); // all work is done through this method
 
    bool prepFile();
@@ -370,9 +408,7 @@ bool PBWriter::prepFile()
 //    const dbrstruct<DBR_TIME_SHORT,0>::dbrtype *samp((const dbrstruct<DBR_TIME_SHORT,0>::dbrtype*)reader.get()); // this is OK - shuei
    getYearMonth(samp->stamp, &year, &month);
 
-   //boundary b = PARTITION_YEAR;
-   boundary b = PARTITION_MONTH;
-   switch (b) {
+   switch (boundary) {
    case PARTITION_YEAR:
       getStartOfYear(year, &startofyear);
       //getStartOfYear(year, &startofboundary);
@@ -385,7 +421,7 @@ bool PBWriter::prepFile()
       break;
    default:
       std::ostringstream msg;
-      msg << "Unsupported Partition " << b;
+      msg << "Unsupported Partition " << boundary;
       throw std::runtime_error(msg.str());
    }
 
@@ -450,7 +486,7 @@ bool PBWriter::prepFile()
    header.set_pvname(reader.getPVname());
 
    std::ostringstream fname;
-   switch (b) {
+   switch (boundary) {
    case PARTITION_YEAR:
       fname << outdir << pvpathname(reader.getPVname().c_str()) << ":" << year << ".pb";
       break;
@@ -459,7 +495,7 @@ bool PBWriter::prepFile()
       break;
    default:
       std::ostringstream msg;
-      msg << "Unsupported Partition " << b;
+      msg << "Unsupported Partition " << boundary;
       throw std::runtime_error(msg.str());
    }
    if (typeChangeError > 0) {
@@ -502,11 +538,12 @@ bool PBWriter::prepFile()
    return true;
 }
 
-PBWriter::PBWriter(PGSQLReader& reader, std::string pv, std::string outdir)
+PBWriter::PBWriter(PGSQLReader& reader, std::string pv, std::string outdir, int boundary)
 :reader(reader)
 ,year(0)
 ,name(pv)
 ,outdir(outdir)
+,boundary(static_cast<boundary_t>(boundary))
 {
    samp = reader.get();
 }
@@ -552,18 +589,9 @@ void PBWriter::write()
    }
 }
 
-// supported DBR types
-struct DBRtype_t { int num; std::string str; };
-#define TYPE(t) {t, #t}
-static std::vector<DBRtype_t> kDBRtypes = {
-   TYPE(DBR_TIME_ENUM),
-   TYPE(DBR_TIME_LONG),
-   TYPE(DBR_TIME_DOUBLE),
-};
-
 void usage(const char *argv0)
 {
-   const char *pv    = "SOME:PVNAME";
+   const char *pv    = "MRMON:DCCT_073_1:VAL:MRPWR";
    const char *start = "2017-02-01T00:00:00";
    const char *end   = "2017-02-02T00:00:00";
    const char *type  = "DBR_TIME_DOUBLE";
@@ -574,43 +602,29 @@ void usage(const char *argv0)
              << argv0 << " -s " << start << " -e " << end << " -t " << type << " " << pv
              << std::endl
              << "Options:" << std::endl
-             << " -h         : Print this message." << std::endl
-             << " -v         : Increase verbosity." << std::endl
-             << " -t DBRTYPE : Specify DBR_TIME_xxxx (required)" << std::endl
-             << "              Both string expression (e.g. DBR_TIME_ENUM)" << std::endl
-             << "              and numeric expression (e.g. 20) are accepted." << std::endl
-             << "              Supported types are:" << std::endl;
+             << " -h           : Print this message." << std::endl
+             << " -v           : Increase verbosity." << std::endl
+             << " -t DBRTYPE   : Specify DBR_TIME_xxxx (required)" << std::endl
+             << "                Both string expression (e.g. DBR_TIME_ENUM)" << std::endl
+             << "                and numeric expression (e.g. 20) are accepted." << std::endl
+             << "                Supported types are:" << std::endl;
    for (auto itr = kDBRtypes.begin(); itr!=kDBRtypes.end(); ++itr) {
-      std::cout << "              " << itr->str << std::endl;
+      std::cout << "                " << itr->str << std::endl;
    }
-   std::cout << " -o OUTDIR  : Specify output directory." << std::endl
-             << " -s START   : Start of query window." << std::endl
-             << " -e END     : End of query winrow." << std::endl
-             << "              Acceptable date formtas are:" << std::endl
-             << "              YYYYMMDDThhmmss" << std::endl
-             << "              YYYYMMDD hhmmss" << std::endl
+   std::cout << " -p PARTITION : Specify Partition Granularity (default = PARTITION_MONTH)." << std::endl
+             << "                Supported garanularities are:" << std::endl;
+   for (auto itr = kPartitions.begin(); itr!=kPartitions.end(); ++itr) {
+      std::cout << "                " << itr->str << std::endl;
+   }
+   std::cout << " -o OUTDIR    : Specify output directory." << std::endl
+             << " -s START     : Start of query window." << std::endl
+             << " -e END       : End of query winrow." << std::endl
+             << "                Acceptable date formtas are:" << std::endl
+             << "                YYYYMMDDThhmmss" << std::endl
+             << "                YYYYMMDD hhmmss" << std::endl
              << std::endl;
 
    exit(EXIT_FAILURE);
-}
-
-int str2dbrtype(const std::string &str)
-{
-   // Numeric expression
-   if (std::all_of(str.begin(), str.end(), ::isdigit)) {
-      return stoi(str);
-   }
-
-   // String expression
-   for (auto itr = kDBRtypes.begin(); itr!=kDBRtypes.end(); ++itr) {
-      // std::cout << itr->num << " " << itr->str <<std::endl;
-      if (str == itr->str) {
-         return itr->num;
-      }
-   }
-
-   // unsupported DBRTYPE
-   return -1;
 }
 
 int main(int argc, char *argv[])
@@ -621,7 +635,8 @@ int main(int argc, char *argv[])
    const  char *argv0 = argv[0];
 
    //
-   int          dbrtype = -1;
+   int          dbrtype  = -1;
+   int          boundary = PARTITION_MONTH;
    std::string  outdir("./");
    std::string  start = "";
    std::string  end   = "";
@@ -631,7 +646,7 @@ int main(int argc, char *argv[])
    int ch;
    extern char *optarg;
    extern int   optind;
-   while ((ch=getopt(argc, argv, "ho:s:e:t:v")) != EOF) {
+   while ((ch=getopt(argc, argv, "ho:p:s:e:t:v")) != EOF) {
       //char *endp;
       switch(ch) {
       case 'h':
@@ -641,7 +656,11 @@ int main(int argc, char *argv[])
          verbose ++;
          break;
       case 't':
-         dbrtype = str2dbrtype(optarg);
+         dbrtype = str2num(optarg, kDBRtypes);
+         if (dbrtype<0) {
+             std::cout << "missing or unsupported DBRTYPE: " << optarg << std::endl;
+             usage(argv0);
+         }
          break;
       case 's':
          start = optarg;
@@ -655,6 +674,13 @@ int main(int argc, char *argv[])
             outdir.push_back('/');
          }
          break;
+      case 'p':
+         boundary = str2num(optarg, kPartitions);
+         if (boundary<0) {
+             std::cout << "unsupported Partition Granularity: " << optarg << std::endl;
+             usage(argv0);
+         }
+         break;
       default:
          usage(argv0);
          break;
@@ -663,11 +689,6 @@ int main(int argc, char *argv[])
 
    argc -= optind;
    argv += optind;
-
-   if (dbrtype<0) {
-      std::cout << "-t : DBRTYPE missing or unsupported" << std::endl;
-      usage(argv0);
-   }
 
    if (argc<=0) {
       usage(argv0);
@@ -706,7 +727,7 @@ int main(int argc, char *argv[])
             std::cout << " start " << start << " end " << end << std::endl;
             std::cout << " Type " << reader->getType() << " count " << reader->getCount() << std::endl;
 
-            PBWriter writer(*reader, pvname, outdir);
+            PBWriter writer(*reader, pvname, outdir, boundary);
             writer.write();
          } catch (std::exception& e) {
             //print exception and continue with the next pv

@@ -336,8 +336,8 @@ bool PBWriter::prepFile()
     const RawValue::Data *samp(reader.get());
     getYearMonth(samp->stamp, &year, &month);
 
-    //boundary b = PARTITION_YEAR;
-    boundary b = PARTITION_MONTH;
+    //boundary_t b = PARTITION_YEAR;
+    boundary_t b = PARTITION_MONTH;
     switch (b) {
     case PARTITION_YEAR:
        getStartOfYear(year, &startofyear);

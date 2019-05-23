@@ -8,7 +8,7 @@
 extern const char *pvseps;
 std::string pvpathname(const char* pvname);
 
-enum boundary {
+enum boundary_t {
    PARTITION_YEAR,
    PARTITION_MONTH
 };
