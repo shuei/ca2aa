@@ -612,14 +612,14 @@ void usage(const char *argv0)
       std::cout << "                " << itr->str << std::endl;
    }
    std::cout << " -p PARTITION : Specify Partition Granularity (default = PARTITION_MONTH)." << std::endl
-             << "                Supported garanularities are:" << std::endl;
+             << "                Supported granularities are:" << std::endl;
    for (auto itr = kPartitions.begin(); itr!=kPartitions.end(); ++itr) {
       std::cout << "                " << itr->str << std::endl;
    }
    std::cout << " -o OUTDIR    : Specify output directory." << std::endl
-             << " -s START     : Start of query window." << std::endl
-             << " -e END       : End of query winrow." << std::endl
-             << "                Acceptable date formtas are:" << std::endl
+             << " -s START     : Start of the query window." << std::endl
+             << " -e END       : End of the query winrow." << std::endl
+             << "                Acceptable date formats are:" << std::endl
              << "                YYYYMMDDThhmmss" << std::endl
              << "                YYYYMMDD hhmmss" << std::endl
              << std::endl;
